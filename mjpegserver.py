@@ -16,18 +16,20 @@ TMBWIDTH  = 300
 FPS       = 3
 
 #Root Directory of the Files
-HTTROOT   =  '/home/pi/mjpegsrv/httroot'
+HTTROOT   =  '/home/epple/mjpegsrv/httroot'
+PORT      = 8085
 # CAMS JPG URLS
 cams = {
-        "cam1" : { "url"  : "http://64.118.25.194/jpg/image.jpg",
+        
+        "cam7" : { "url"  : "http://64.118.25.194/jpg/image.jpg",
                    "hires": "",
                    "user" : "" ,
                    "pwd"  : "" },     
-        "cam2" : { "url"  : "http://217.7.233.140/record/current.jpg",
+        "cam8" : { "url"  : "http://217.7.233.140/record/current.jpg",
                    "hires": "",
                    "user" : "" ,
                    "pwd"  : "" },                       
-        "cam3" : { "url"  : "http://217.89.94.116/record/current.jpg",
+        "cam9" : { "url"  : "http://217.89.94.116/record/current.jpg",
                    "hires": "",
                    "user" : "" ,
                    "pwd"  : "" },                     
@@ -35,8 +37,8 @@ cams = {
       }
       
 # Define Users and Passwords      
-users = { "myuser" : "password",
-          "guest" : "guest"
+users = { "guest" : "guest",
+          "user"  : "userpassword"
         }      
 #Realm for Authentication , put realm to empty to disable auth
 realm = "Authenticated Site"
@@ -58,6 +60,7 @@ class Handler(BaseHTTPRequestHandler):
       url = ''
       if cam in cams: 
         url = cams[cam]["url"]
+      print "Processing Camera: " + cam + ". URL: " + url        
 
 # --- SERVE: HTML ---------------------------------------------------------------      
       if pathReq.endswith('.html'):
@@ -80,7 +83,6 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(htmlcont)        
         except:
           self.send_response(404)
-        
         return
 
 # --- SERVE STATIC FILES -------------------------------------------------------
@@ -154,10 +156,11 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('Content-type','multipart/x-mixed-replace; boundary=--jpgboundary')
         self.end_headers()
         
+        print "Streaming Motion JPEG for Camera: " + cam + ". URL: " + url
         if  pathReq.endswith('.hmjpg'):
-          if 'hires' in cams[cam]:
+          if len(cams[cam]["hires"]) > 0:
             url = cams[cam]["hires"] 
-            print url
+          print 'URL:' + url
           
         #Maximum 5 Mins
         t_end = time.time() + 60 * 5
@@ -179,10 +182,10 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header('Content-length',size)
             self.end_headers()
             self.wfile.write(jpg)
-          except self.error as e:
+          except:
             print "exception openPipe"
-            thread.exit()
             break
+            return
           time.sleep(1 / FPS)  
         return
         
@@ -204,7 +207,7 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
     """Handle requests in a separate thread."""
 
 if __name__ == '__main__':
-    server = ThreadedHTTPServer(('', 8085), Handler)
+    server = ThreadedHTTPServer(('', PORT), Handler)
     print 'Starting server, use <Ctrl-C> to stop'
     try:
       server.serve_forever()
