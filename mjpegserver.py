@@ -6,6 +6,7 @@ import StringIO
 import time
 import urllib2
 import base64
+import os
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from SocketServer import ThreadingMixIn
 import threading
@@ -43,6 +44,11 @@ users = { "guest" : "guest",
 #Realm for Authentication , put realm to empty to disable auth
 realm = "Authenticated Site"
 # -------------- CONFIGURATION END  -------------------------------------------
+if not os.path.exists(HTTROOT + "/cache"):
+  print "Creating Cache Directory: " + HTTROOT + "/cache"
+  os.mkdir(HTTROOT + "/cache")
+  HTTROOT + "/cache"
+
 class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
