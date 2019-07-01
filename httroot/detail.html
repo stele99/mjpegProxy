@@ -1,0 +1,100 @@
+<html>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+    <script>
+      $(document).ready(function(){
+        var cam = location.search.substr(1)
+        LoadMJPG("mjpg");
+        
+        function LoadMJPG(mode){
+          $("#main").html('<img src="' + cam + '.' + mode + '?'+ new Date().getTime()+'" >')
+          $("#navres").click(function(){
+              if($("#navres").html() == "HiRes"){
+                $("#navres").html("LowRes");
+                LoadMJPG("hmjpg");
+                $("img").css("max-width","100%");
+
+              }else{
+                $("#navres").html("LowRes");
+                LoadMJPG("mjpg");
+                $("#main img").css("max-width", "720px");                
+              }
+          });
+          
+          $("#main img, #navback").click(function(){
+              $(this).css("filter","brightness(1.5)");
+              document.location.href="index.html";
+          })
+          
+        }
+                
+      })
+    </script>
+    <style>
+      *{
+        font-family: Arial, Futura;
+        color: white;
+      }            
+      body{
+        background-color: black;
+        margin: 0px;
+        border: 0px;
+      }
+      #main{
+        text-align:center;
+      }
+      #nav{
+          margin-top: 5px;
+          position: absolute;
+          z-index: 3;
+          bottom: 20px;
+          width:100%;
+          text-align:center;
+      }
+      .navbt{
+        width: 100px;
+        display: inline-block;
+        color: #FAFAFA;
+        background-color: #5F5F5F;
+        opacity: 0.5;
+        margin: 0 5 5 0;
+        padding: 3px;
+        border-radius: 4px;
+        font-size:25px;
+        cursor: hand;
+      }
+
+      
+      #main img{
+          position: fixed;
+          top: 0;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          width: 100%;
+          min-height: 150px;
+          min-width: 250px;
+          background-color: #2b2929;
+          max-width: 720px;
+          max-height: 100%;
+          margin: auto;
+          overflow: auto;
+          border-radius: 9px;
+          border: solid 5px #2b2929;       
+          background-image: url(loading.gif);
+          background-repeat: no-repeat;
+          background-position: center;             
+          
+      }   
+    </style>
+    <title>Webcam Viewer - Fullview</title>
+  </head>
+  <body>
+    <div id="main">
+      <img src="image.jpg">
+  </div>
+  <div id="nav"><span class="navbt" id="navback">Zurück</span><span class="navbt" id="navres">HiRes</span></div>
+  </body>
+</html>
