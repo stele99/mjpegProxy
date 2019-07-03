@@ -1,9 +1,13 @@
-<html>
+<!doctype html>
+<html lang="en">
+<head>
+  <title>Webcam Viewer</title>
   <meta http-equiv="content-type" content="text/html; charset=utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <meta content='yes' name='apple-mobile-web-app-capable' />
   <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="apple-touch-startup-image" href="apple-touch-icon.png" />
   <link rel="apple-touch-icon" sizes="57x57" href="apple-touch-icon-57x57.png" />
   <link rel="apple-touch-icon" sizes="72x72" href="apple-touch-icon-72x72.png" />
   <link rel="apple-touch-icon" sizes="76x76" href="apple-touch-icon-76x76.png" />
@@ -12,109 +16,103 @@
   <link rel="apple-touch-icon" sizes="144x144" href="apple-touch-icon-144x144.png" />
   <link rel="apple-touch-icon" sizes="152x152" href="apple-touch-icon-152x152.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon-180x180.png" />  
-    <head>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
-    <script src="refresh.js"></script>
-    
-    <script>
-        $("img").addClass("imgload");
-        function reloadCams(){
-               $("img").on('load', function() {
-                                $(this).removeClass("imgload");               
-                            });      
-                                    
-              $(".camimg").each(function(){
-                          $(this).attr("src", $(this).attr("data-cam") + ".jpg?" + new Date().getTime());
-                          
-              });
+  
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+  <script src="refresh.js"></script>
+  <script>
+      $("img").addClass("imgload");
+      function reloadCams(){
+             $("img").on('load', function() {
+                              $(this).removeClass("imgload");               
+                          });      
+            $(".camimg").each(function(){
+                        $(this).attr("src", $(this).attr("data-cam") + ".jpg?" + new Date().getTime());
+                        
+            });
+      }
+      
+      $(document).ready(function(){
+          $(".camimg").click(function(){
+                var cam = $(this).attr("data-cam")
+                $(this).css("filter","brightness(1.5)")
+                document.location.href="detail.html?" + cam
+          })
+          PullToRefresh.init({
+              mainElement: '#mainbody', // above which element?
+              onRefresh: function (done) {
+                setTimeout(function () {
+                  done(); // end pull to refresh
+                  $("img").addClass("imgload")
+                  reloadCams();
+                }, 1);
+              }
+            });
+          $("img").removeClass("imgload");              
+          reloadCams();
+          setInterval(  "reloadCams()", 7000);      
+    });
+  </script>
+  <style>
+    body{
+      margin:10px;
+      border:0px;
+      background-color: black;
+      font-family: Arial, Futura;
+    }
+    .imgload{
+      -webkit-filter: grayscale(1) blur(2px);
+    }
+    .cam{
+      float: left;
+      overflow: hidden;
+    }
+    .cam img{
+      display: block;
+      height: auto;
+      max-height: 168px;
+      min-height: 168px;
+      min-width: 300px;
+      margin: 5px;
+      width: 300px;
+      cursor: hand;
+      border-radius: 9px;
+      border: solid 5px #2b2929;
+      background-color: #2b2929;
+      background-image: url(loading.gif);
+      background-repeat: no-repeat;
+      background-position: center;             
+    }
+    @media screen and (max-width: 600px) {
+        .cam img{
+          width: 90%;
+          margin: auto;
+          margin-bottom: 8px;            
+          height: auto;
+          max-height: 500px;
         }
-        
-        $(document).ready(function(){
-            $(".camimg").click(function(){
-                  var cam = $(this).attr("data-cam")
-                  $(this).css("filter","brightness(1.5)")
-                  document.location.href="detail.html?" + cam
-            })
-            PullToRefresh.init({
-                mainElement: '#mainbody', // above which element?
-                onRefresh: function (done) {
-                  setTimeout(function () {
-                    done(); // end pull to refresh
-                    $("img").addClass("imgload")
-                    reloadCams();
-                  }, 1);
-                }
-              });
-            $("img").removeClass("imgload");              
-            reloadCams();
-            setInterval(  "reloadCams()", 7000);      
-      });
-    </script>
-    <style>
-      body{
-        margin:10px;
-        border:0px;
-        background-color: black;
+        .cam{
+          float: none;
+        }       
+    }
+    #header{
         font-family: Arial, Futura;
-      }
-      
-      
-      .imgload{
-        -webkit-filter: grayscale(1) blur(2px);
-      }
-      .cam{
-        float: left;
-        overflow: hidden;
-      }
-      .cam img{
-        display: block;
-        height: auto;
-        max-height: 168px;
-        min-height: 168px;
-        min-width: 300px;
-        margin: 5px;
-        width: 300px;
-        cursor: hand;
-        border-radius: 9px;
-        border: solid 5px #2b2929;
-        background-color: #2b2929;
-        background-image: url(loading.gif);
-        background-repeat: no-repeat;
-        background-position: center;             
-      }
-      @media screen and (max-width: 600px) {
-          .cam img{
-            width: 90%;
-            margin: auto;
-            margin-bottom: 8px;            
-            height: auto;
-            max-height: 500px;
-          }
-          .cam{
-            float: none;
-          }       
-      }
-      #header{
-          font-family: Arial, Futura;
-          font-size: 15px;
-          color: #C1C1C1;
-      }
-      #footer{
-        clear:both;
+        font-size: 15px;
         color: #C1C1C1;
-        font-family: Arial, Futura;
-        font-size: 9px;
-      }
-      .ptr--icon, .ptr--text{
-        color: #E6E6E6 !important;
-      }
-      .ptr--ptr{
-        box-shadow: inset 0 -3px 5px rgba(255,255,255, 0.1) !important;
-      }
-            
-      
-    </style>
-    <title>Webcam Viewer</title>
+    }
+    #footer{
+      clear:both;
+      color: #C1C1C1;
+      font-family: Arial, Futura;
+      font-size: 9px;
+    }
+    .ptr--icon, .ptr--text{
+      color: #E6E6E6 !important;
+    }
+    .ptr--ptr{
+      box-shadow: inset 0 -3px 5px rgba(255,255,255, 0.1) !important;
+    }
+  </style>
+
   </head>
   <body>
     <div id="imgSpinner" class="spinner" style="visibility: hidden;"></div>
