@@ -4,7 +4,10 @@ from PIL import Image
 import threading
 import StringIO
 import time
+import Cookie
+import crypt
 import urllib2
+from urlparse import urlparse
 import base64
 import os
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
@@ -16,12 +19,11 @@ TMBWIDTH  = 300
 # Frames to fetch per Second (1-5 should be ok)
 FPS       = 3
 
-#Root Directory of the Files
-HTTROOT   =  '/home/epple/mjpegsrv/httroot'
+#Root Directory of the Files without ending slash
+HTTROOT   =  '/home/pi/mjpegsrv/httroot'
 PORT      = 8085
 # CAMS JPG URLS
 cams = {
-        
         "cam7" : { "url"  : "http://64.118.25.194/jpg/image.jpg",
                    "hires": "",
                    "user" : "" ,
@@ -40,21 +42,24 @@ cams = {
 # Define Users and Passwords      
 users = { "guest" : "guest",
           "user"  : "userpassword"
-        }      
-#Realm for Authentication , put realm to empty to disable auth
-realm = "Authenticated Site"
+        }
+        
+#Timeout for HTTP Read activities in seconds
+TIMEOUT=2                                   
+#Realm for Authentication , put realm to empty to disable auth and key
+realm   = "Authenticated Site"
+cSecret = "JKjkj.jksz23892hQkseyldreA.fe"
+
 # -------------- CONFIGURATION END  -------------------------------------------
+
 if not os.path.exists(HTTROOT + "/cache"):
-  print "Creating Cache Directory: " + HTTROOT + "/cache"
   os.mkdir(HTTROOT + "/cache")
   HTTROOT + "/cache"
 
 class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
-      if realm and not self.check_basic_auth():
-        return
-      
+     
       pathReq = self.path
       if pathReq == ('') or pathReq == '/':
         pathReq = '/index.html'
@@ -66,7 +71,13 @@ class Handler(BaseHTTPRequestHandler):
       url = ''
       if cam in cams: 
         url = cams[cam]["url"]
-      print "Processing Camera: " + cam + ". URL: " + url        
+        print "Processing Camera: " + cam + ". URL: " + url        
+
+      # not when icons are loaded
+      if realm and not pathReq.endswith('.png'):
+        if realm and not self.check_basic_auth():
+          return
+
 
 # --- SERVE: HTML ---------------------------------------------------------------      
       if pathReq.endswith('.html'):
@@ -83,7 +94,7 @@ class Handler(BaseHTTPRequestHandler):
             if pathReq.endswith('index.html'):
               htmlcam = ''
               for wc in sorted(cams):
-                htmlcam = htmlcam + '<div class="cam"><img class="camimg" data-cam="' + wc + '" src="cache/' + wc + '.jpeg"/></div>'  
+                htmlcam = htmlcam + '<div class="cam"><img class="camimg" alt="' + wc + '" data-cam="' + wc + '" src="cache/' + wc + '.jpeg"/></div>'  
               htmlcont = htmlcont.replace('%CAMS%', htmlcam)
               
             self.wfile.write(htmlcont)        
@@ -127,7 +138,7 @@ class Handler(BaseHTTPRequestHandler):
           if cams[cam]["user"]:
              base64string = base64.encodestring('%s:%s' % (cams[cam]["user"], cams[cam]["pwd"])).replace('\n', '')
              req.add_header("Authorization", "Basic %s" % base64string)            
-          res  = urllib2.urlopen(req)
+          res  = urllib2.urlopen(req, timeout = TIMEOUT)
           jpg  = res.read()
           img  = Image.open(StringIO.StringIO(jpg))
         except:
@@ -172,37 +183,63 @@ class Handler(BaseHTTPRequestHandler):
         t_end = time.time() + 60 * 5
         while time.time() < t_end:
           try:
-            self.wfile.write("--jpgboundary")
             req  = urllib2.Request(url)
             if cams[cam]["user"]:
                base64string = base64.encodestring('%s:%s' % (cams[cam]["user"], cams[cam]["pwd"])).replace('\n', '')
-               req.add_header("Authorization", "Basic %s" % base64string)            
-            res  = urllib2.urlopen(req)
+               req.add_header("Authorization", "Basic %s" % base64string)
+            resdone = 0             
+            res  = urllib2.urlopen(req, timeout = TIMEOUT)
+            resdone = 1
+            self.wfile.write("--jpgboundary")
             size = res.headers['content-length']
             jpg  = res.read()
           except:
             print "Error reading source for MJPG"
           
-          try:
-            self.send_header('Content-type','image/jpeg')
-            self.send_header('Content-length',size)
-            self.end_headers()
-            self.wfile.write(jpg)
-          except:
-            print "exception openPipe"
-            break
-            return
-          time.sleep(1 / FPS)  
+          if resdone == 1:
+            try:
+              self.send_header('Content-type','image/jpeg')
+              self.send_header('Content-length',size)
+              self.end_headers()
+              self.wfile.write(jpg)
+            except:
+              print "exception openPipe"
+              break
+              return
+            time.sleep(1 / FPS)  
         return
         
     def check_basic_auth(self):
       auth_hdr = self.headers.getheader('Authorization')
+      # URL Auth
+      query = urlparse(self.path).query
+      if '&' in query and '=' in query:
+        q = dict(qc.split("=") for qc in query.split("&"))
+        if q['user'] in users and users[q['user']]== q['password']:
+          self.send_response(200)
+          c = Cookie.SimpleCookie()
+          c['mjpgserver'] = base64.encodestring('%s:%s' % (q['user'], q['password'])).replace('\n', '')
+          self.send_header('Set-Cookie', c['mjpgserver'].OutputString())
+          return True   
+      # Check URL / Cookie Auth
+      if 'Cookie' in self.headers:
+        try:
+          # Extract and decode the cookie.
+          c = Cookie.SimpleCookie(self.headers['Cookie'])
+          username, password = c['mjpgserver'].value.decode("base64").split(":", 1)
+          if username in users and users[username]==password:
+            return True
+        except:
+          pass
+      
+      # Basic Auth
       if auth_hdr:
           method, auth = auth_hdr.split(" ", 1)
           if method.lower()=="basic":
             username, password = auth.decode("base64").split(":", 1)
             if username in users and users[username]==password:
               return True
+        
       self.send_response(401)
       self.send_header('WWW-Authenticate', 'Basic realm=\"%s\"' % realm)
       self.send_header('Content-type', 'text/html')
